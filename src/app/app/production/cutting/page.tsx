@@ -18,8 +18,6 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableHead,
-  TableHeader,
   TableRow,
   Tabs,
 } from "@/components/commercial/ui";
