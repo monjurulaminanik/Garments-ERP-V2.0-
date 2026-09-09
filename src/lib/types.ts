@@ -386,6 +386,42 @@ export interface Role {
 /* Aggregate ERP document                                             */
 /* ------------------------------------------------------------------ */
 
+export interface Employee {
+  id: string;
+  name: string;
+  department: string;
+  designation: string;
+  basicSalary: number;
+  status: "Active" | "Inactive" | "On Leave";
+  joiningDate: string;
+  contactNumber: string;
+}
+
+export interface AttendanceLog {
+  id: string;
+  date: string;
+  empId: string;
+  name: string;
+  inTime: string | null;
+  outTime: string | null;
+  status: "Present" | "Absent" | "Late" | "Half Day" | "On Leave";
+  source: "ZKTeco" | "Manual";
+}
+
+export interface PayrollRecord {
+  id: string;
+  month: string; // e.g. "2026-09"
+  empId: string;
+  name: string;
+  department: string;
+  basicSalary: number;
+  attendanceDays: number;
+  lateDeduction: number;
+  overtimeAmount: number;
+  netPayable: number;
+  status: "Draft" | "Approved" | "Paid";
+}
+
 export interface ErpData {
   buyers: Buyer[];
   orders: Order[];
@@ -409,6 +445,9 @@ export interface ErpData {
   pnl: Pnl[];
   settings: Settings;
   roles: Role[];
+  employees: Employee[];
+  attendance: AttendanceLog[];
+  payroll: PayrollRecord[];
 }
 
 /** Key of every array-valued module in ErpData — used by generic CRUD helpers. */

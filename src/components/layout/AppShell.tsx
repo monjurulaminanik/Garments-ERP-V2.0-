@@ -11,6 +11,7 @@ import { useCommercialData } from "@/hooks/useCommercialData";
 import { useProductionData } from "@/hooks/useProductionData";
 import { useInventoryData } from "@/hooks/useInventoryData";
 import { useProcurementData } from "@/hooks/useProcurementData";
+import { useHrData } from "@/hooks/useHrData";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_W = "w-[248px]";
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const refreshProduction = useProductionData((state) => state.refresh);
   const refreshInventory = useInventoryData((state) => state.refresh);
   const refreshProcurement = useProcurementData((state) => state.refresh);
+  const refreshHr = useHrData((state) => state.refresh);
 
   useEffect(() => {
     ensureLoadedErp();
@@ -31,7 +33,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     void refreshProduction();
     void refreshInventory();
     void refreshProcurement();
-  }, [ensureLoadedErp, refreshCommercial, refreshProduction, refreshInventory, refreshProcurement]);
+    void refreshHr();
+  }, [ensureLoadedErp, refreshCommercial, refreshProduction, refreshInventory, refreshProcurement, refreshHr]);
 
   useEffect(() => {
     const onResize = () => {

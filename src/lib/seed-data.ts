@@ -21,6 +21,9 @@ import type {
   Pnl,
   Settings,
   Role,
+  Employee,
+  AttendanceLog,
+  PayrollRecord,
   ErpData,
 } from "./types";
 
@@ -883,6 +886,112 @@ export const roles: Role[] = [
 ];
 
 /* ------------------------------------------------------------------ */
+/* HR & Admin (Auto-Generated 100 Employees)                          */
+/* ------------------------------------------------------------------ */
+
+function generateHrData() {
+  const departments = [
+    { name: "Sewing", roles: ["Operator", "Helper", "Line Supervisor"], baseSalary: 12500, count: 40 },
+    { name: "Cutting", roles: ["Cutter", "Helper", "Master"], baseSalary: 13000, count: 10 },
+    { name: "Finishing", roles: ["Iron Man", "Folder", "Quality Checker"], baseSalary: 12000, count: 15 },
+    { name: "Knitting", roles: ["Machine Operator", "Technician"], baseSalary: 14000, count: 10 },
+    { name: "Dyeing", roles: ["Dyeing Master", "Helper"], baseSalary: 14500, count: 10 },
+    { name: "HR & Admin", roles: ["HR Executive", "Admin Officer", "Security"], baseSalary: 18000, count: 5 },
+    { name: "Quality Control", roles: ["QC Inspector", "QC Manager"], baseSalary: 15000, count: 5 },
+    { name: "Merchandising", roles: ["Merchandiser", "Sr. Merchandiser"], baseSalary: 25000, count: 3 },
+    { name: "Management", roles: ["Production Manager", "General Manager"], baseSalary: 50000, count: 2 },
+  ];
+
+  const firstNames = ["Md. Rahim", "Kamrul", "Sumon", "Raju", "Hasan", "Arif", "Tarik", "Mizan", "Rafiq", "Jalal", "Aminul", "Babu", "Faruk", "Nazmul", "Shohag", "Liton", "Ripon", "Sharif", "Jewel", "Rubel", "Mamun", "Al-Amin", "Sagor", "Tuhin", "Ashik", "Mehedi", "Rakib", "Shakil", "Imran", "Sujon", "Monir", "Tariqul", "Mostofa", "Habib", "Jamal", "Kamal", "Zahir", "Shafiq", "Kawsar", "Nayan", "Faisal", "Mahmud", "Sabbir", "Nahid", "Sazzad", "Akash", "Riaz"];
+  const lastNames = ["Islam", "Ali", "Mia", "Hossain", "Uddin", "Rahman", "Sikder", "Khan", "Chowdhury", "Talukder", "Molla", "Sheikh"];
+
+  const employees: Employee[] = [];
+  const attendance: AttendanceLog[] = [];
+  const payroll: PayrollRecord[] = [];
+
+  const today = new Date().toISOString().split("T")[0];
+  const currentMonth = today.substring(0, 7);
+  let empCounter = 1;
+
+  for (const dept of departments) {
+    for (let i = 0; i < dept.count; i++) {
+      const id = `EMP-${empCounter.toString().padStart(3, "0")}`;
+      const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      const name = `${fName} ${lName}`;
+      const role = dept.roles[Math.floor(Math.random() * dept.roles.length)];
+      const variance = Math.floor(Math.random() * 3000) - 1000;
+      const salary = dept.baseSalary + variance;
+
+      employees.push({
+        id,
+        name,
+        department: dept.name,
+        designation: role,
+        basicSalary: salary,
+        status: "Active",
+        joiningDate: "2025-01-15",
+        contactNumber: `017${Math.floor(10000000 + Math.random() * 90000000)}`,
+      });
+
+      // Generate Attendance for today
+      const isLate = Math.random() > 0.8;
+      const isAbsent = Math.random() > 0.95;
+      
+      let inTime = "07:55 AM";
+      let outTime = "05:05 PM";
+      let status: "Present" | "Absent" | "Late" | "Half Day" | "On Leave" = "Present";
+      
+      if (isAbsent) {
+        inTime = "-";
+        outTime = "-";
+        status = "Absent";
+      } else if (isLate) {
+        inTime = `08:${Math.floor(15 + Math.random() * 30)} AM`;
+        status = "Late";
+      }
+
+      attendance.push({
+        id: `ATT-${today}-${id}`,
+        date: today,
+        empId: id,
+        name,
+        inTime: inTime === "-" ? null : inTime,
+        outTime: outTime === "-" ? null : outTime,
+        status,
+        source: "ZKTeco",
+      });
+
+      // Generate Payroll for the month
+      const attendanceDays = isAbsent ? 25 : 26;
+      const lateDeduction = isLate ? 500 : 0;
+      const overtimeAmount = (dept.name === "Sewing" || dept.name === "Finishing") ? Math.floor(Math.random() * 3000) : 0;
+      const netPayable = salary - lateDeduction + overtimeAmount;
+
+      payroll.push({
+        id: `PR-${currentMonth}-${id}`,
+        month: currentMonth,
+        empId: id,
+        name,
+        department: dept.name,
+        basicSalary: salary,
+        attendanceDays,
+        lateDeduction,
+        overtimeAmount,
+        netPayable,
+        status: "Draft",
+      });
+
+      empCounter++;
+    }
+  }
+
+  return { employees, attendance, payroll };
+}
+
+const hrData = generateHrData();
+
+/* ------------------------------------------------------------------ */
 /* Aggregate export                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -910,6 +1019,9 @@ export function buildSeedData(): ErpData {
     pnl,
     settings,
     roles,
+    employees: hrData.employees,
+    attendance: hrData.attendance,
+    payroll: hrData.payroll,
   };
 }
 
