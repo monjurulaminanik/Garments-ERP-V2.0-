@@ -332,7 +332,7 @@ export default function CostingPage() {
                 <p className="text-xs text-slate-500 mt-1">Payment: {selectedCosting.paymentTerms} | Shipment: {selectedCosting.shipmentTerms}</p>
               </div>
               <div>
-                <Button variant={selectedCosting.isFobLocked ? "secondary" : "default"} size="sm" onClick={() => toggleFobLock(selectedCosting)}>
+                <Button variant={selectedCosting.isFobLocked ? "secondary" : "primary"} size="sm" onClick={() => toggleFobLock(selectedCosting)}>
                   {selectedCosting.isFobLocked ? <><Unlock className="h-3.5 w-3.5" /> Unlock FOB</> : <><Lock className="h-3.5 w-3.5" /> Lock Final FOB</>}
                 </Button>
               </div>
