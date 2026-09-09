@@ -58,84 +58,115 @@ interface ProductionState {
 
   addPackingJob: (input: Omit<PackingJob, "id">) => PackingJob;
   updatePackingJob: (id: string, patch: Partial<Omit<PackingJob, "id">>) => void;
+
+  refresh: () => Promise<void>;
+}
+
+function persistToServer(state: Omit<ProductionState, "addCuttingJob" | "updateCuttingJob" | "addSewingLine" | "updateSewingLine" | "addFinishingJob" | "updateFinishingJob" | "addPackingJob" | "updatePackingJob" | "refresh">) {
+  if (typeof window === "undefined") return;
+  fetch("/api/data?store=production", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: state }),
+  }).catch(() => {});
 }
 
 export const useProductionData = create<ProductionState>()(
   persist(
-    (set) => ({
-      cuttingJobs: seedCuttingJobs,
-      sewingLines: seedSewingLines,
-      finishingJobs: seedFinishingJobs,
-      packingJobs: seedPackingJobs,
+    (set, get) => {
+      const apply = (updater: (state: ProductionState) => Partial<ProductionState>) => {
+        const next = updater(get());
+        set(next);
+        const { addCuttingJob, updateCuttingJob, addSewingLine, updateSewingLine, addFinishingJob, updateFinishingJob, addPackingJob, updatePackingJob, refresh, ...dataToPersist } = { ...get(), ...next };
+        persistToServer(dataToPersist);
+      };
 
-      addCuttingJob: (input) => {
-        const record: CuttingJob = {
-          ...input,
-          id: uid("cut"),
-          balance: cuttingBalance(input.fabricIssued, input.cutQty, input.reject),
-        };
-        set((state) => ({ cuttingJobs: [record, ...state.cuttingJobs] }));
-        return record;
-      },
+      return {
+        cuttingJobs: seedCuttingJobs,
+        sewingLines: seedSewingLines,
+        finishingJobs: seedFinishingJobs,
+        packingJobs: seedPackingJobs,
 
-      updateCuttingJob: (id, patch) => {
-        set((state) => ({
-          cuttingJobs: state.cuttingJobs.map((job) => {
-            if (job.id !== id) return job;
-            const merged: CuttingJob = { ...job, ...patch };
-            merged.balance = cuttingBalance(merged.fabricIssued, merged.cutQty, merged.reject);
-            return merged;
-          }),
-        }));
-      },
+        refresh: async () => {
+          try {
+            const res = await fetch("/api/data?store=production");
+            const json = await res.json();
+            if (json?.success && json.data) {
+              set({ ...json.data });
+            }
+          } catch (e) {}
+        },
 
-      addSewingLine: (input) => {
-        const efficiencyPercent = sewingEfficiencyPct(input.target, input.output);
-        const record: SewingLine = {
-          ...input,
-          id: uid("sew"),
-          efficiencyPercent,
-          status: sewingStatusFromEfficiency(efficiencyPercent),
-        };
-        set((state) => ({ sewingLines: [record, ...state.sewingLines] }));
-        return record;
-      },
+        addCuttingJob: (input) => {
+          const record: CuttingJob = {
+            ...input,
+            id: uid("cut"),
+            balance: cuttingBalance(input.fabricIssued, input.cutQty, input.reject),
+          };
+          apply((state) => ({ cuttingJobs: [record, ...state.cuttingJobs] }));
+          return record;
+        },
 
-      updateSewingLine: (id, patch) => {
-        set((state) => ({
-          sewingLines: state.sewingLines.map((line) => {
-            if (line.id !== id) return line;
-            const merged = { ...line, ...patch };
-            const efficiencyPercent = sewingEfficiencyPct(merged.target, merged.output);
-            return { ...merged, efficiencyPercent, status: sewingStatusFromEfficiency(efficiencyPercent) };
-          }),
-        }));
-      },
+        updateCuttingJob: (id, patch) => {
+          apply((state) => ({
+            cuttingJobs: state.cuttingJobs.map((job) => {
+              if (job.id !== id) return job;
+              const merged: CuttingJob = { ...job, ...patch };
+              merged.balance = cuttingBalance(merged.fabricIssued, merged.cutQty, merged.reject);
+              return merged;
+            }),
+          }));
+        },
 
-      addFinishingJob: (input) => {
-        const record: FinishingJob = { ...input, id: uid("fin") };
-        set((state) => ({ finishingJobs: [record, ...state.finishingJobs] }));
-        return record;
-      },
+        addSewingLine: (input) => {
+          const efficiencyPercent = sewingEfficiencyPct(input.target, input.output);
+          const record: SewingLine = {
+            ...input,
+            id: uid("sew"),
+            efficiencyPercent,
+            status: sewingStatusFromEfficiency(efficiencyPercent),
+          };
+          apply((state) => ({ sewingLines: [record, ...state.sewingLines] }));
+          return record;
+        },
 
-      updateFinishingJob: (id, patch) => {
-        set((state) => ({
-          finishingJobs: state.finishingJobs.map((job) => (job.id === id ? { ...job, ...patch } : job)),
-        }));
-      },
+        updateSewingLine: (id, patch) => {
+          apply((state) => ({
+            sewingLines: state.sewingLines.map((line) => {
+              if (line.id !== id) return line;
+              const merged: SewingLine = { ...line, ...patch };
+              merged.efficiencyPercent = sewingEfficiencyPct(merged.target, merged.output);
+              merged.status = sewingStatusFromEfficiency(merged.efficiencyPercent);
+              return merged;
+            }),
+          }));
+        },
 
-      addPackingJob: (input) => {
-        const record: PackingJob = { ...input, id: uid("pack") };
-        set((state) => ({ packingJobs: [record, ...state.packingJobs] }));
-        return record;
-      },
+        addFinishingJob: (input) => {
+          const record: FinishingJob = { ...input, id: uid("fin") };
+          apply((state) => ({ finishingJobs: [record, ...state.finishingJobs] }));
+          return record;
+        },
 
-      updatePackingJob: (id, patch) => {
-        set((state) => ({
-          packingJobs: state.packingJobs.map((job) => (job.id === id ? { ...job, ...patch } : job)),
-        }));
-      },
-    }),
+        updateFinishingJob: (id, patch) => {
+          apply((state) => ({
+            finishingJobs: state.finishingJobs.map((job) => (job.id === id ? { ...job, ...patch } : job)),
+          }));
+        },
+
+        addPackingJob: (input) => {
+          const record: PackingJob = { ...input, id: uid("pack") };
+          apply((state) => ({ packingJobs: [record, ...state.packingJobs] }));
+          return record;
+        },
+
+        updatePackingJob: (id, patch) => {
+          apply((state) => ({
+            packingJobs: state.packingJobs.map((job) => (job.id === id ? { ...job, ...patch } : job)),
+          }));
+        },
+      };
+    },
     { name: "same-dawat-erp-production", version: 1 }
   )
 );

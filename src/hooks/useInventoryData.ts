@@ -59,51 +59,81 @@ interface InventoryState {
   deleteInventoryItem: (id: string) => void;
 
   addLedgerEntry: (input: Omit<StockLedgerEntry, "id" | "balance">) => StockLedgerEntry;
+
+  refresh: () => Promise<void>;
+}
+
+function persistToServer(state: Omit<InventoryState, "addInventoryItem" | "updateInventoryItem" | "deleteInventoryItem" | "addLedgerEntry" | "refresh">) {
+  if (typeof window === "undefined") return;
+  fetch("/api/data?store=inventory", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: state }),
+  }).catch(() => {});
 }
 
 export const useInventoryData = create<InventoryState>()(
   persist(
-    (set, get) => ({
-      inventory: [...seedInventory, ...buildFinishedGoodsSeed()],
-      stockLedger: seedStockLedger,
+    (set, get) => {
+      const apply = (updater: (state: InventoryState) => Partial<InventoryState>) => {
+        const next = updater(get());
+        set(next);
+        const { addInventoryItem, updateInventoryItem, deleteInventoryItem, addLedgerEntry, refresh, ...dataToPersist } = { ...get(), ...next };
+        persistToServer(dataToPersist);
+      };
 
-      addInventoryItem: (input) => {
-        const record: InventoryItem = {
-          ...input,
-          id: uid("inv"),
-          balance: computeBalance(input.received, input.issued),
-        };
-        set((state) => ({ inventory: [record, ...state.inventory] }));
-        return record;
-      },
+      return {
+        inventory: [...seedInventory, ...buildFinishedGoodsSeed()],
+        stockLedger: seedStockLedger,
 
-      updateInventoryItem: (id, patch) => {
-        set((state) => ({
-          inventory: state.inventory.map((item) => {
-            if (item.id !== id) return item;
-            const merged: InventoryItem = { ...item, ...patch };
-            merged.balance = computeBalance(merged.received, merged.issued);
-            return merged;
-          }),
-        }));
-      },
+        refresh: async () => {
+          try {
+            const res = await fetch("/api/data?store=inventory");
+            const json = await res.json();
+            if (json?.success && json.data) {
+              set({ ...json.data });
+            }
+          } catch (e) {}
+        },
 
-      deleteInventoryItem: (id) => {
-        set((state) => ({ inventory: state.inventory.filter((item) => item.id !== id) }));
-      },
+        addInventoryItem: (input) => {
+          const record: InventoryItem = {
+            ...input,
+            id: uid("inv"),
+            balance: computeBalance(input.received, input.issued),
+          };
+          apply((state) => ({ inventory: [record, ...state.inventory] }));
+          return record;
+        },
 
-      addLedgerEntry: (input) => {
-        const lastForItem = get().stockLedger.find((entry) => entry.itemName === input.itemName);
-        const previousBalance = lastForItem?.balance ?? 0;
-        const record: StockLedgerEntry = {
-          ...input,
-          id: uid("ledger"),
-          balance: Math.max(previousBalance + input.inQty - input.outQty, 0),
-        };
-        set((state) => ({ stockLedger: [record, ...state.stockLedger] }));
-        return record;
-      },
-    }),
+        updateInventoryItem: (id, patch) => {
+          apply((state) => ({
+            inventory: state.inventory.map((item) => {
+              if (item.id !== id) return item;
+              const merged: InventoryItem = { ...item, ...patch };
+              merged.balance = computeBalance(merged.received, merged.issued);
+              return merged;
+            }),
+          }));
+        },
+
+        deleteInventoryItem: (id) => {
+          apply((state) => ({ inventory: state.inventory.filter((item) => item.id !== id) }));
+        },
+
+        addLedgerEntry: (input) => {
+          const lastForItem = get().stockLedger.find((entry) => entry.itemName === input.itemName);
+          const previousBalance = lastForItem?.balance ?? 0;
+          const record: StockLedgerEntry = {
+            ...input,
+            id: uid("ledger"),
+            balance: Math.max(previousBalance + input.inQty - input.outQty, 0),
+          };
+          apply((state) => ({ stockLedger: [record, ...state.stockLedger] }));
+          return record;
+        },
+      };
+    },
     { name: "same-dawat-erp-inventory", version: 1 }
   )
 );

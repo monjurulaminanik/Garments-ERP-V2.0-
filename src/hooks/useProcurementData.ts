@@ -29,38 +29,68 @@ interface ProcurementState {
   addProcurement: (input: Omit<Procurement, "id" | "balance">) => Procurement;
   updateProcurement: (id: string, patch: Partial<Omit<Procurement, "id">>) => void;
   deleteProcurement: (id: string) => void;
+
+  refresh: () => Promise<void>;
+}
+
+function persistToServer(state: Omit<ProcurementState, "addProcurement" | "updateProcurement" | "deleteProcurement" | "refresh">) {
+  if (typeof window === "undefined") return;
+  fetch("/api/data?store=procurement", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: state }),
+  }).catch(() => {});
 }
 
 export const useProcurementData = create<ProcurementState>()(
   persist(
-    (set) => ({
-      procurements: seedProcurements,
+    (set, get) => {
+      const apply = (updater: (state: ProcurementState) => Partial<ProcurementState>) => {
+        const next = updater(get());
+        set(next);
+        const { addProcurement, updateProcurement, deleteProcurement, refresh, ...dataToPersist } = { ...get(), ...next };
+        persistToServer(dataToPersist);
+      };
 
-      addProcurement: (input) => {
-        const record: Procurement = {
-          ...input,
-          id: uid("proc"),
-          balance: computeBalance(input.required, input.received),
-        };
-        set((state) => ({ procurements: [record, ...state.procurements] }));
-        return record;
-      },
+      return {
+        procurements: seedProcurements,
 
-      updateProcurement: (id, patch) => {
-        set((state) => ({
-          procurements: state.procurements.map((p) => {
-            if (p.id !== id) return p;
-            const merged: Procurement = { ...p, ...patch };
-            merged.balance = computeBalance(merged.required, merged.received);
-            return merged;
-          }),
-        }));
-      },
+        refresh: async () => {
+          try {
+            const res = await fetch("/api/data?store=procurement");
+            const json = await res.json();
+            if (json?.success && json.data) {
+              set({ ...json.data });
+            }
+          } catch (e) {}
+        },
 
-      deleteProcurement: (id) => {
-        set((state) => ({ procurements: state.procurements.filter((p) => p.id !== id) }));
-      },
-    }),
+        addProcurement: (input) => {
+          const record: Procurement = {
+            ...input,
+            id: uid("proc"),
+            balance: computeBalance(input.required, input.received),
+          };
+          apply((state) => ({ procurements: [record, ...state.procurements] }));
+          return record;
+        },
+
+        updateProcurement: (id, patch) => {
+          apply((state) => ({
+            procurements: state.procurements.map((p) => {
+              if (p.id !== id) return p;
+              const merged: Procurement = { ...p, ...patch };
+              merged.balance = computeBalance(merged.required, merged.received);
+              return merged;
+            }),
+          }));
+        },
+
+        deleteProcurement: (id) => {
+          apply((state) => ({ procurements: state.procurements.filter((p) => p.id !== id) }));
+        },
+      };
+    },
     { name: "same-dawat-erp-procurement", version: 1 }
   )
 );

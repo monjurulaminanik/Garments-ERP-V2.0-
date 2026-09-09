@@ -15,20 +15,25 @@ const DOC_KEY = "main";
  * (first run on a fresh database), it is auto-seeded from
  * `src/lib/seed-data.ts` and then returned.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
+    
+    const storeKey = request.nextUrl.searchParams.get("store") || DOC_KEY;
 
-    let doc = await ErpDataModel.findOne({ key: DOC_KEY }).lean();
+    let doc = await ErpDataModel.findOne({ key: storeKey }).lean();
 
-    if (!doc) {
-      const created = await ErpDataModel.create({ key: DOC_KEY, data: seedData });
+    if (!doc && storeKey === "main") {
+      const created = await ErpDataModel.create({ key: storeKey, data: seedData });
       doc = created.toObject();
+    } else if (!doc) {
+      // For specialized stores that don't exist yet, return empty object
+      return NextResponse.json({ success: true, data: null });
     }
 
     return NextResponse.json({ success: true, data: doc.data as ErpData, updatedAt: doc.updatedAt });
   } catch (error) {
-    console.error("[GET /api/data] failed:", error);
+    console.error(`[GET /api/data] failed:`, error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Failed to load ERP data." },
       { status: 500 }
@@ -45,8 +50,9 @@ export async function GET() {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const storeKey = request.nextUrl.searchParams.get("store") || DOC_KEY;
     const body = await request.json();
-    const nextData = body?.data as ErpData | undefined;
+    const nextData = body?.data;
 
     if (!nextData || typeof nextData !== "object") {
       return NextResponse.json({ success: false, error: "Request body must include a `data` object." }, { status: 400 });
@@ -55,8 +61,8 @@ export async function PUT(request: NextRequest) {
     await connectToDatabase();
 
     const updated = await ErpDataModel.findOneAndUpdate(
-      { key: DOC_KEY },
-      { key: DOC_KEY, data: nextData },
+      { key: storeKey },
+      { key: storeKey, data: nextData },
       { upsert: true, new: true }
     ).lean();
 

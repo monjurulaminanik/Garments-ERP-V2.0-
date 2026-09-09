@@ -7,6 +7,10 @@ import { AppTopbar } from "@/components/layout/AppTopbar";
 import { RoleGuard } from "@/components/layout/RoleGuard";
 import { Toaster } from "@/components/ui/Toast";
 import { useErpRecords } from "@/hooks/useErpRecords";
+import { useCommercialData } from "@/hooks/useCommercialData";
+import { useProductionData } from "@/hooks/useProductionData";
+import { useInventoryData } from "@/hooks/useInventoryData";
+import { useProcurementData } from "@/hooks/useProcurementData";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_W = "w-[248px]";
@@ -14,11 +18,20 @@ const MAIN_OFFSET = "lg:pl-[248px]";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const ensureLoaded = useErpRecords((state) => state.ensureLoaded);
+  
+  const ensureLoadedErp = useErpRecords((state) => state.ensureLoaded);
+  const refreshCommercial = useCommercialData((state) => state.refresh);
+  const refreshProduction = useProductionData((state) => state.refresh);
+  const refreshInventory = useInventoryData((state) => state.refresh);
+  const refreshProcurement = useProcurementData((state) => state.refresh);
 
   useEffect(() => {
-    ensureLoaded();
-  }, [ensureLoaded]);
+    ensureLoadedErp();
+    void refreshCommercial();
+    void refreshProduction();
+    void refreshInventory();
+    void refreshProcurement();
+  }, [ensureLoadedErp, refreshCommercial, refreshProduction, refreshInventory, refreshProcurement]);
 
   useEffect(() => {
     const onResize = () => {

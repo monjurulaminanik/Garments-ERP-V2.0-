@@ -241,74 +241,104 @@ interface CommercialState {
   addCosting: (costing: Omit<Costing, "id" | "createdAt">) => Costing;
   updateCosting: (id: string, patch: Partial<Costing>) => void;
   deleteCosting: (id: string) => void;
+
+  refresh: () => Promise<void>;
+}
+
+function persistToServer(state: Omit<CommercialState, "addBuyer" | "updateBuyer" | "deleteBuyer" | "addOrder" | "updateOrder" | "deleteOrder" | "addTaTask" | "updateTaTask" | "deleteTaTask" | "addMerchItem" | "updateMerchItem" | "addCosting" | "updateCosting" | "deleteCosting" | "refresh">) {
+  if (typeof window === "undefined") return;
+  fetch("/api/data?store=commercial", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: state }),
+  }).catch(() => {});
 }
 
 export const useCommercialData = create<CommercialState>()(
   persist(
-    (set) => ({
-      buyers: seedBuyers,
-      orders: seedOrders,
-      taTasks: seedTaTasks,
-      merchItems: seedMerchItems,
-      costings: seedCostings,
+    (set, get) => {
+      const apply = (updater: (state: CommercialState) => Partial<CommercialState>) => {
+        const next = updater(get());
+        set(next);
+        const { addBuyer, updateBuyer, deleteBuyer, addOrder, updateOrder, deleteOrder, addTaTask, updateTaTask, deleteTaTask, addMerchItem, updateMerchItem, addCosting, updateCosting, deleteCosting, refresh, ...dataToPersist } = { ...get(), ...next };
+        persistToServer(dataToPersist);
+      };
 
-      addBuyer: (buyer) => {
-        const newBuyer: Buyer = { ...buyer, id: uid("buyer"), createdAt: new Date().toISOString().slice(0, 10) };
-        set((state) => ({ buyers: [newBuyer, ...state.buyers] }));
-        return newBuyer;
-      },
-      updateBuyer: (id, patch) => {
-        set((state) => ({ buyers: state.buyers.map((b) => (b.id === id ? { ...b, ...patch } : b)) }));
-      },
-      deleteBuyer: (id) => {
-        set((state) => ({ buyers: state.buyers.filter((b) => b.id !== id) }));
-      },
+      return {
+        buyers: seedBuyers,
+        orders: seedOrders,
+        taTasks: seedTaTasks,
+        merchItems: seedMerchItems,
+        costings: seedCostings,
 
-      addOrder: (order) => {
-        const newOrder: Order = { ...order, id: uid("order"), createdAt: new Date().toISOString().slice(0, 10) };
-        set((state) => ({ orders: [newOrder, ...state.orders] }));
-        return newOrder;
-      },
-      updateOrder: (id, patch) => {
-        set((state) => ({ orders: state.orders.map((o) => (o.id === id ? { ...o, ...patch } : o)) }));
-      },
-      deleteOrder: (id) => {
-        set((state) => ({ orders: state.orders.filter((o) => o.id !== id) }));
-      },
+        refresh: async () => {
+          try {
+            const res = await fetch("/api/data?store=commercial");
+            const json = await res.json();
+            if (json?.success && json.data) {
+              set({ ...json.data });
+            }
+          } catch (e) {}
+        },
 
-      addTaTask: (task) => {
-        const newTask: TaTask = { ...task, id: uid("ta") };
-        set((state) => ({ taTasks: [newTask, ...state.taTasks] }));
-        return newTask;
-      },
-      updateTaTask: (id, patch) => {
-        set((state) => ({ taTasks: state.taTasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
-      },
-      deleteTaTask: (id) => {
-        set((state) => ({ taTasks: state.taTasks.filter((t) => t.id !== id) }));
-      },
+        addBuyer: (buyer) => {
+          const newBuyer: Buyer = { ...buyer, id: uid("buyer"), createdAt: new Date().toISOString().slice(0, 10) };
+          apply((state) => ({ buyers: [newBuyer, ...state.buyers] }));
+          return newBuyer;
+        },
+        updateBuyer: (id, patch) => {
+          apply((state) => ({ buyers: state.buyers.map((b) => (b.id === id ? { ...b, ...patch } : b)) }));
+        },
+        deleteBuyer: (id) => {
+          apply((state) => ({ buyers: state.buyers.filter((b) => b.id !== id) }));
+        },
 
-      addMerchItem: (item) => {
-        const newItem: MerchItem = { ...item, id: uid("mi") };
-        set((state) => ({ merchItems: [newItem, ...state.merchItems] }));
-        return newItem;
-      },
-      updateMerchItem: (id, patch) => {
-        set((state) => ({ merchItems: state.merchItems.map((m) => (m.id === id ? { ...m, ...patch } : m)) }));
-      },
+        addOrder: (order) => {
+          const newOrder: Order = { ...order, id: uid("order"), createdAt: new Date().toISOString().slice(0, 10) };
+          apply((state) => ({ orders: [newOrder, ...state.orders] }));
+          return newOrder;
+        },
+        updateOrder: (id, patch) => {
+          apply((state) => ({ orders: state.orders.map((o) => (o.id === id ? { ...o, ...patch } : o)) }));
+        },
+        deleteOrder: (id) => {
+          apply((state) => ({ orders: state.orders.filter((o) => o.id !== id) }));
+        },
 
-      addCosting: (costing) => {
-        const newCosting: Costing = { ...costing, id: uid("cs"), createdAt: new Date().toISOString().slice(0, 10) };
-        set((state) => ({ costings: [newCosting, ...state.costings] }));
-        return newCosting;
-      },
-      updateCosting: (id, patch) => {
-        set((state) => ({ costings: state.costings.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
-      },
-      deleteCosting: (id) => {
-        set((state) => ({ costings: state.costings.filter((c) => c.id !== id) }));
-      },
-    }),
+        addTaTask: (task) => {
+          const newTask: TaTask = { ...task, id: uid("ta") };
+          apply((state) => ({ taTasks: [newTask, ...state.taTasks] }));
+          return newTask;
+        },
+        updateTaTask: (id, patch) => {
+          apply((state) => ({ taTasks: state.taTasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+        },
+        deleteTaTask: (id) => {
+          apply((state) => ({ taTasks: state.taTasks.filter((t) => t.id !== id) }));
+        },
+
+        addMerchItem: (item) => {
+          const newItem: MerchItem = { ...item, id: uid("mi") };
+          apply((state) => ({ merchItems: [newItem, ...state.merchItems] }));
+          return newItem;
+        },
+        updateMerchItem: (id, patch) => {
+          apply((state) => ({ merchItems: state.merchItems.map((m) => (m.id === id ? { ...m, ...patch } : m)) }));
+        },
+
+        addCosting: (costing) => {
+          const newCosting: Costing = { ...costing, id: uid("cs"), createdAt: new Date().toISOString().slice(0, 10) };
+          apply((state) => ({ costings: [newCosting, ...state.costings] }));
+          return newCosting;
+        },
+        updateCosting: (id, patch) => {
+          apply((state) => ({ costings: state.costings.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+        },
+        deleteCosting: (id) => {
+          apply((state) => ({ costings: state.costings.filter((c) => c.id !== id) }));
+        },
+      };
+    },
     { name: "same-dawat-erp-commercial", version: 2 }
   )
 );
