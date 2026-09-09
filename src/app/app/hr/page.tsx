@@ -21,7 +21,7 @@ import {
   Modal,
   Select
 } from "@/components/commercial/ui";
-import { bn } from "@/lib/bn";
+import { formatNumber } from "@/lib/utils";
 import { useHrData } from "@/hooks/useHrData";
 import { Employee } from "@/lib/types";
 
@@ -155,7 +155,7 @@ export default function HRPage() {
                       </TableCell>
                       <TableCell>{e.department}</TableCell>
                       <TableCell>{e.designation}</TableCell>
-                      <TableCell>BDT {bn(e.basicSalary)}</TableCell>
+                      <TableCell>BDT {formatNumber(e.basicSalary)}</TableCell>
                       <TableCell>
                         <Badge tone={e.status === "Active" ? "green" : e.status === "On Leave" ? "amber" : "red"}>{e.status}</Badge>
                       </TableCell>
@@ -278,10 +278,10 @@ export default function HRPage() {
                           <TableCell className="font-semibold">{p.empId}</TableCell>
                           <TableCell>{p.name}</TableCell>
                           <TableCell>{p.department}</TableCell>
-                          <TableCell className="text-right">BDT {bn(p.basicSalary)}</TableCell>
-                          <TableCell className="text-right text-red-500">-BDT {bn(p.lateDeduction)}</TableCell>
-                          <TableCell className="text-right text-green-600">+BDT {bn(p.overtimeAmount)}</TableCell>
-                          <TableCell className="text-right font-bold text-slate-900">BDT {bn(p.netPayable)}</TableCell>
+                          <TableCell className="text-right">BDT {formatNumber(p.basicSalary)}</TableCell>
+                          <TableCell className="text-right text-red-500">-BDT {formatNumber(p.lateDeduction)}</TableCell>
+                          <TableCell className="text-right text-green-600">+BDT {formatNumber(p.overtimeAmount)}</TableCell>
+                          <TableCell className="text-right font-bold text-slate-900">BDT {formatNumber(p.netPayable)}</TableCell>
                           <TableCell>
                             <Badge tone={p.status === "Paid" ? "green" : "amber"}>{p.status}</Badge>
                           </TableCell>

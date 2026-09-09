@@ -117,7 +117,7 @@ export default function DyeingPage() {
                     <p>Start Time: <span className="font-medium text-slate-800">{m.startTime}</span></p>
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-200">
-                    <Button variant={m.status === "Running" ? "outline" : "default"} className="w-full">
+                    <Button variant={m.status === "Running" ? "outline" : "primary"} className="w-full">
                       {m.status === "Running" ? "Unload Machine" : "Load Machine"}
                     </Button>
                   </div>

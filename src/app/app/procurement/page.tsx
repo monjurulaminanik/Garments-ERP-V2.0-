@@ -34,6 +34,8 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+  CardHeader,
+  CardTitle,
 } from "@/components/commercial/ui";
 import {
   Procurement,
@@ -503,7 +505,7 @@ function ProcurementContent() {
           <form onSubmit={handleUpdateSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label required>{bn.procurement.receivedQty}</Label>
+                <Label required>{bn.procurement.received}</Label>
                 <Input required type="number" min={0} value={updateForm.received} onChange={(e) => setUpdateForm({ ...updateForm, received: e.target.value })} />
                 <p className="mt-1 text-xs text-slate-500">
                   Total required: {formatNumber(editItem.required)}. Balance: {formatNumber(editItem.required - Number(updateForm.received))}

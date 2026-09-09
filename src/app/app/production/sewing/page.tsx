@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+  CardHeader,
+  CardTitle,
 } from "@/components/commercial/ui";
 import { Calculator } from "lucide-react";
 import { SewingLine, useProductionData } from "@/hooks/useProductionData";

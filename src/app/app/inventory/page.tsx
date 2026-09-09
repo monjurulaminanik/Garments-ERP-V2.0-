@@ -15,6 +15,7 @@ import {
   Scissors,
   Search,
   TriangleAlert,
+  Layers,
 } from "lucide-react";
 import {
   Badge,
@@ -34,6 +35,8 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+  CardHeader,
+  CardTitle,
 } from "@/components/commercial/ui";
 import { InventoryItem, useInventoryData } from "@/hooks/useInventoryData";
 import { CuttingJob, useProductionData } from "@/hooks/useProductionData";
@@ -328,7 +331,7 @@ function InventoryContent() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <KpiTile icon={<Boxes className="h-5 w-5" />} label="Grey Fabric" value={formatNumber(kpis.fabricItems)} tone="blue" />
-        <KpiTile icon={<Layers className="h-5 w-5" />} label="Fin. Fabric" value={formatNumber(kpis.finishedFabric)} tone="purple" />
+        <KpiTile icon={<Layers className="h-5 w-5" />} label="Fin. Fabric" value={formatNumber(kpis.finishedFabric)} tone="teal" />
         <KpiTile icon={<PackageSearch className="h-5 w-5" />} label="Trims" value={formatNumber(kpis.trimsItems)} tone="green" />
         <KpiTile icon={<PackageCheck className="h-5 w-5" />} label="Finished" value={formatNumber(kpis.finishedItems)} tone="teal" />
         <KpiTile icon={<TriangleAlert className="h-5 w-5" />} label={bn.inventory.lowStock} value={formatNumber(kpis.lowStock)} tone="red" />
@@ -394,7 +397,7 @@ function InventoryContent() {
               <CardTitle>Cutting Issue & Bundling</CardTitle>
               <Button size="sm">
                 <Scissors className="h-4 w-4 mr-2" />
-                {bn.inventory.issueFabric}
+                {"Issue Fabric"}
               </Button>
             </CardHeader>
             <CardContent>
@@ -432,7 +435,7 @@ function InventoryContent() {
                   </Table>
                 </div>
               ) : (
-                <EmptyState title="No jobs found" description="No matching cutting jobs." icon={<Scissors />} />
+                <EmptyState message="No matching cutting jobs." />
               )}
             </CardContent>
           </Card>

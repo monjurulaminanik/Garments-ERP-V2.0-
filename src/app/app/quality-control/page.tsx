@@ -55,7 +55,6 @@ type QcFormState = {
   passed: string;
   defectQty: string;
   rejected: string;
-  rejected: string;
   defectType: string;
   result: QcResult;
   lotSize?: string;
