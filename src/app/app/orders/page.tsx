@@ -12,6 +12,7 @@ import {
   Plus,
   Search,
   TriangleAlert,
+  Activity,
 } from "lucide-react";
 import {
   Badge,
@@ -88,6 +89,7 @@ export default function OrdersPage() {
   const [buyerFilter, setBuyerFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [view360Order, setView360Order] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [form, setForm] = useState<OrderFormState>(emptyForm);
   const [updateForm, setUpdateForm] = useState({
@@ -323,13 +325,15 @@ export default function OrdersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1.5">
-                      <Button variant="secondary" size="sm" onClick={() => openView(order)}>
+                      <Button variant="secondary" size="sm" onClick={() => setView360Order(order)} title="Order 360 View">
+                        <Activity className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline ml-1">360°</span>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => openView(order)}>
                         <Eye className="h-3.5 w-3.5" />
-                        {bn.view}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit(order)}>
                         <Pencil className="h-3.5 w-3.5" />
-                        {bn.update}
                       </Button>
                     </div>
                   </TableCell>
@@ -508,6 +512,98 @@ export default function OrdersPage() {
               <Button type="submit">{bn.save}</Button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Order 360 Modal */}
+      <Modal
+        open={!!view360Order}
+        onClose={() => setView360Order(null)}
+        title={view360Order ? `Order 360° Dashboard — ${view360Order.po}` : ""}
+        description={view360Order ? `${view360Order.buyer} · ${view360Order.style}` : ""}
+        size="lg"
+      >
+        {view360Order && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Production Status</p>
+                <p className="text-lg font-bold text-slate-800 mt-1">{view360Order.stage}</p>
+                <div className="mt-2 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-teal-500" style={{ width: `${view360Order.progress}%` }} />
+                </div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">T&A Health</p>
+                <div className="mt-1">
+                  <Badge tone={taStatusTone(view360Order.taStatus)}>{view360Order.taStatus}</Badge>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Ship Date: {formatDate(view360Order.shipDate)}</p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Financials</p>
+                <p className="text-lg font-bold text-slate-800 mt-1">{formatMoney(orderValue(view360Order))}</p>
+                <p className="text-xs text-slate-500 mt-1 uppercase"><Badge tone={paymentStatusTone(view360Order.paymentStatus)}>{view360Order.paymentStatus}</Badge></p>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Material Readiness</p>
+                <p className="text-lg font-bold text-slate-800 mt-1">85%</p>
+                <p className="text-xs text-slate-500 mt-1">Trims Pending</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-3">Recent QC Inspections</h3>
+                <div className="border border-slate-100 rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Stage</TableHead>
+                        <TableHead>Result</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Inline (Sewing)</TableCell>
+                        <TableCell><Badge tone="green">Passed</Badge></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Cutting Panel</TableCell>
+                        <TableCell><Badge tone="green">Passed</Badge></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800 mb-3">T&A Milestones</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 mt-1.5 rounded-full bg-teal-500" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">Yarn In-house</p>
+                      <p className="text-xs text-slate-500">Completed 12 days ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 mt-1.5 rounded-full bg-amber-500" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">PP Sample Approval</p>
+                      <p className="text-xs text-amber-600">Pending (Due in 2 days)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 mt-1.5 rounded-full bg-slate-300" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">Final Inspection</p>
+                      <p className="text-xs text-slate-400">Scheduled for {formatDate(view360Order.shipDate)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </Modal>
     </div>

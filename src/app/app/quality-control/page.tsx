@@ -55,8 +55,11 @@ type QcFormState = {
   passed: string;
   defectQty: string;
   rejected: string;
+  rejected: string;
   defectType: string;
   result: QcResult;
+  lotSize?: string;
+  aqlLevel?: string;
 };
 
 const emptyForm: QcFormState = {
@@ -68,6 +71,8 @@ const emptyForm: QcFormState = {
   rejected: "",
   defectType: "",
   result: "passed",
+  lotSize: "",
+  aqlLevel: "2.5",
 };
 
 export default function QualityControlPage() {
@@ -470,13 +475,34 @@ function QualityControlContent() {
                 options={RESULTS.map((r) => ({ value: r, label: r }))}
               />
             </div>
+            {activeTab === "final" && (
+              <>
+                <div>
+                  <Label>AQL Level</Label>
+                  <Select
+                    value={form.aqlLevel}
+                    onChange={(e) => setForm({ ...form, aqlLevel: e.target.value })}
+                    options={[
+                      { value: "1.0", label: "AQL 1.0" },
+                      { value: "1.5", label: "AQL 1.5" },
+                      { value: "2.5", label: "AQL 2.5 (Standard)" },
+                      { value: "4.0", label: "AQL 4.0" },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <Label>Lot Size</Label>
+                  <Input type="number" min={0} value={form.lotSize} onChange={(e) => setForm({ ...form, lotSize: e.target.value })} placeholder="1200" />
+                </div>
+              </>
+            )}
             <div>
-              <Label required>Checked Qty</Label>
-              <Input required type="number" min={0} value={form.checked} onChange={(e) => setForm({ ...form, checked: e.target.value })} placeholder="500" />
+              <Label required>{activeTab === "final" ? "Sample Size (Checked Qty)" : "Checked Qty"}</Label>
+              <Input required type="number" min={0} value={form.checked} onChange={(e) => setForm({ ...form, checked: e.target.value })} placeholder="80" />
             </div>
             <div>
               <Label required>Passed Qty</Label>
-              <Input required type="number" min={0} value={form.passed} onChange={(e) => setForm({ ...form, passed: e.target.value })} placeholder="480" />
+              <Input required type="number" min={0} value={form.passed} onChange={(e) => setForm({ ...form, passed: e.target.value })} placeholder="78" />
             </div>
             <div>
               <Label required>Defect Qty</Label>

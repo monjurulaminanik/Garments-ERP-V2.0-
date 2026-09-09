@@ -18,8 +18,12 @@ import {
   TableCell,
   TableHead,
   TableHeader,
+  TableHead,
+  TableHeader,
   TableRow,
+  Tabs,
 } from "@/components/commercial/ui";
+import { Package } from "lucide-react";
 import { CuttingJob, useProductionData } from "@/hooks/useProductionData";
 import type { CuttingStatus } from "@/lib/types";
 import { orders as seedOrders } from "@/lib/seed-data";
@@ -63,6 +67,7 @@ export default function CuttingPage() {
   const [editJob, setEditJob] = useState<CuttingJob | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [updateForm, setUpdateForm] = useState({ cutQty: "0", reject: "0", status: "Pending" as CuttingStatus });
+  const [activeTab, setActiveTab] = useState("cutting");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -187,14 +192,25 @@ export default function CuttingPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiTile icon={<Layers className="h-5 w-5" />} label="মোট ফেব্রিক ইস্যু" value={`${formatNumber(kpis.totalIssued)} pcs`} tone="teal" />
-        <KpiTile icon={<Scissors className="h-5 w-5" />} label={bn.production.cutting.totalCut} value={`${formatNumber(kpis.totalCut)} pcs`} tone="blue" />
-        <KpiTile icon={<TriangleAlert className="h-5 w-5" />} label={bn.production.cutting.totalReject} value={`${formatNumber(kpis.totalReject)} pcs`} tone="red" />
-        <KpiTile icon={<Scissors className="h-5 w-5" />} label={bn.production.cutting.inProgress} value={formatNumber(kpis.inProgress)} tone="green" />
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { value: "cutting", label: "Cutting Jobs", icon: <Scissors className="h-4 w-4" /> },
+          { value: "bundles", label: "Bundle Tracking", icon: <Package className="h-4 w-4" /> },
+        ]}
+      />
 
-      <Card>
+      {activeTab === "cutting" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <KpiTile icon={<Layers className="h-5 w-5" />} label="মোট ফেব্রিক ইস্যু" value={`${formatNumber(kpis.totalIssued)} pcs`} tone="teal" />
+            <KpiTile icon={<Scissors className="h-5 w-5" />} label={bn.production.cutting.totalCut} value={`${formatNumber(kpis.totalCut)} pcs`} tone="blue" />
+            <KpiTile icon={<TriangleAlert className="h-5 w-5" />} label={bn.production.cutting.totalReject} value={`${formatNumber(kpis.totalReject)} pcs`} tone="red" />
+            <KpiTile icon={<Scissors className="h-5 w-5" />} label={bn.production.cutting.inProgress} value={formatNumber(kpis.inProgress)} tone="green" />
+          </div>
+
+          <Card>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="max-w-sm flex-1">
             <Label className="sr-only">Search</Label>
@@ -267,6 +283,70 @@ export default function CuttingPage() {
           </Table>
         )}
       </Card>
+      </div>
+      )}
+
+      {activeTab === "bundles" && (
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="max-w-sm flex-1">
+                <Label className="sr-only">Search Bundles</Label>
+                <Input icon={<Search className="h-4 w-4" />} placeholder="Scan barcode or search Bundle ID..." />
+              </div>
+              <div className="w-full sm:w-48">
+                <Select>
+                  <option value="all">All Statuses</option>
+                  <option value="ready">Ready for Sewing</option>
+                  <option value="in-sewing">In Sewing</option>
+                  <option value="completed">Completed</option>
+                </Select>
+              </div>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" /> Create Bundle
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Bundle ID</TableHead>
+                  <TableHead>Order Info</TableHead>
+                  <TableHead>Size / Color</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Assigned Line</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Mock Bundle Data */}
+                {[
+                  { id: "BND-24-001", order: "PO-24-001 (ST-8899)", size: "M", color: "Navy", qty: 50, line: "Line 1", status: "In Sewing", tone: "blue" },
+                  { id: "BND-24-002", order: "PO-24-001 (ST-8899)", size: "L", color: "Navy", qty: 50, line: "Unassigned", status: "Ready for Sewing", tone: "amber" },
+                  { id: "BND-24-003", order: "PO-24-002 (ST-7711)", size: "S", color: "Black", qty: 25, line: "Line 2", status: "Completed", tone: "green" },
+                ].map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell className="font-mono font-semibold text-slate-800">{b.id}</TableCell>
+                    <TableCell>{b.order}</TableCell>
+                    <TableCell>{b.size} / {b.color}</TableCell>
+                    <TableCell>{b.qty} pcs</TableCell>
+                    <TableCell>{b.line}</TableCell>
+                    <TableCell>
+                      <Badge tone={b.tone as any}>{b.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="secondary" size="sm">Print Tag</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+      )}
 
       {/* Add cutting job modal */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="নতুন কাটিং জব" size="lg">
